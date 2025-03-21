@@ -41,9 +41,9 @@ export default function Translation() {
   // Function to start recording
   const startRecording = (event) => {
     if (event.cancelable) {
-      event.preventDefault(); // Prevent default behavior if possible
+      event.preventDefault();
     }
-    resetTranscript(); // Reset the transcript
+    resetTranscript();
     SpeechRecognition.startListening(); // Start recording
   };
 
@@ -54,28 +54,28 @@ export default function Translation() {
   };
 
   // Attach event listeners manually using ref
-  React.useEffect(() => {
-    const micButton = micButtonRef.current;
+//   React.useEffect(() => {
+//     const micButton = micButtonRef.current;
 
-    if (micButton) {
-      const handleTouchStart = (event) => {
-        if (event.cancelable) {
-          event.preventDefault(); // Prevent default behavior if possible
-        }
-        startRecording(event);
-      };
+//     if (micButton) {
+//       const handleTouchStart = (event) => {
+//         if (event.cancelable) {
+//           event.preventDefault(); // Prevent default behavior if possible
+//         }
+//         startRecording(event);
+//       };
 
-      // Add non-passive event listeners
-      micButton.addEventListener("touchstart", handleTouchStart, { passive: false });
-      micButton.addEventListener("touchend", stopRecording);
+//       // Add non-passive event listeners
+//       micButton.addEventListener("touchstart", handleTouchStart, { passive: false });
+//       micButton.addEventListener("touchend", stopRecording);
 
-      // Cleanup event listeners on unmount
-      return () => {
-        micButton.removeEventListener("touchstart", handleTouchStart);
-        micButton.removeEventListener("touchend", stopRecording);
-      };
-    }
-  }, []);
+//       // Cleanup event listeners on unmount
+//       return () => {
+//         micButton.removeEventListener("touchstart", handleTouchStart);
+//         micButton.removeEventListener("touchend", stopRecording);
+//       };
+//     }
+//   }, []);
 
   // State to track source and target languages
   const [sourceLanguage, setSourceLanguage] = React.useState("");
@@ -199,7 +199,6 @@ export default function Translation() {
 
         {/* Microphone Button */}
         <button
-          ref={micButtonRef} // Attach ref to the button
           type="button" // Prevent form submission
           className="!p-2 border-2 rounded-full border-sky-900 rounded-full"
           onMouseDown={startRecording} // Start recording on mouse down
