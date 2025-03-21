@@ -1,13 +1,12 @@
+"use client";
 import styles from "./translation.module.css";
 import * as React from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftRight } from "lucide-react";
 import { Mic } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Volume2 } from "lucide-react";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
 import {
   Select,
   SelectContent,
@@ -23,60 +22,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 
 export default function Translation() {
-  const {
-    transcript, // Stores the transcribed text
-    listening, // Indicates if speech recognition is active
-    resetTranscript, // Resets the transcript
-    browserSupportsSpeechRecognition, // Checks if the browser supports speech recognition
-  } = useSpeechRecognition();
-
-  // State to store the final transcribed text
-  const [recordedText, setRecordedText] = React.useState("");
-
-  // Ref for the microphone button
-  const micButtonRef = React.useRef(null);
-
-  // Function to start recording
-  const startRecording = (event) => {
-    if (event.cancelable) {
-      event.preventDefault();
-    }
-    resetTranscript();
-    SpeechRecognition.startListening(); // Start recording
-  };
-
-  // Function to stop recording
-  const stopRecording = () => {
-    SpeechRecognition.stopListening(); // Stop recording
-    setRecordedText(transcript); // Save the transcribed text
-  };
-
-  // Attach event listeners manually using ref
-//   React.useEffect(() => {
-//     const micButton = micButtonRef.current;
-
-//     if (micButton) {
-//       const handleTouchStart = (event) => {
-//         if (event.cancelable) {
-//           event.preventDefault(); // Prevent default behavior if possible
-//         }
-//         startRecording(event);
-//       };
-
-//       // Add non-passive event listeners
-//       micButton.addEventListener("touchstart", handleTouchStart, { passive: false });
-//       micButton.addEventListener("touchend", stopRecording);
-
-//       // Cleanup event listeners on unmount
-//       return () => {
-//         micButton.removeEventListener("touchstart", handleTouchStart);
-//         micButton.removeEventListener("touchend", stopRecording);
-//       };
-//     }
-//   }, []);
-
   // State to track source and target languages
   const [sourceLanguage, setSourceLanguage] = React.useState("");
   const [targetLanguage, setTargetLanguage] = React.useState("");
@@ -87,6 +37,24 @@ export default function Translation() {
     setSourceLanguage(targetLanguage);
     setTargetLanguage(temp);
   };
+  const [text, setText] = useState("");
+  function handleRecord() {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Your browser does not support speech recognition.");
+        return;
+      }
+      const recognition = new SpeechRecognition();
+      recognition.onresult = async function (event) {
+        const transcript = event.results[0][0].transcript;
+        setText(transcript);
+        console.log("event", event);
+      };
+      recognition.start();
+    }
+  }
 
   return (
     <>
@@ -199,25 +167,20 @@ export default function Translation() {
 
         {/* Microphone Button */}
         <button
-          type="button" // Prevent form submission
           className="!p-2 border-2 rounded-full border-sky-900 rounded-full"
-          onMouseDown={startRecording} // Start recording on mouse down
-          onMouseUp={stopRecording} // Stop recording on mouse up
-          onTouchStart={startRecording} // Start recording on touch start
-          onTouchEnd={stopRecording} // Stop recording on touch end
+          type="button"
+          onClick={handleRecord}
         >
           <Mic className="w-10 h-10 !p-2" />
         </button>
-        <div>{listening ? "Recording..." : "Record"}</div>
 
         {/* Textarea */}
-        <Textarea
+        {/* <Textarea
           className="w-64 md:w-96 lg:w-120 !p-3"
           placeholder="This is what you said ..."
-          value={recordedText}
-          onChange={(e) => setRecordedText(e.target.value)}
-        />
-
+          {text}
+        /> */}
+        <p>Spoken Text: {text}</p>
         {/* Volume Button */}
         <TooltipProvider>
           <Tooltip>
