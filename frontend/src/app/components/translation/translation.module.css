@@ -1,0 +1,14 @@
+.container
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 50px;
+    gap: 42px;
+}
+.label
+{
+    color: var(--light-color);
+    margin-right: 0.4in;
+}
