@@ -35,8 +35,14 @@ export default function Translation() {
   // State to store the final transcribed text
   const [recordedText, setRecordedText] = React.useState("");
 
+  // Ref for the microphone button
+  const micButtonRef = React.useRef(null);
+
   // Function to start recording
-  const startRecording = () => {
+  const startRecording = (event) => {
+    if (event.cancelable) {
+      event.preventDefault(); // Prevent default behavior if possible
+    }
     resetTranscript(); // Reset the transcript
     SpeechRecognition.startListening(); // Start recording
   };
@@ -46,6 +52,30 @@ export default function Translation() {
     SpeechRecognition.stopListening(); // Stop recording
     setRecordedText(transcript); // Save the transcribed text
   };
+
+  // Attach event listeners manually using ref
+  React.useEffect(() => {
+    const micButton = micButtonRef.current;
+
+    if (micButton) {
+      const handleTouchStart = (event) => {
+        if (event.cancelable) {
+          event.preventDefault(); // Prevent default behavior if possible
+        }
+        startRecording(event);
+      };
+
+      // Add non-passive event listeners
+      micButton.addEventListener("touchstart", handleTouchStart, { passive: false });
+      micButton.addEventListener("touchend", stopRecording);
+
+      // Cleanup event listeners on unmount
+      return () => {
+        micButton.removeEventListener("touchstart", handleTouchStart);
+        micButton.removeEventListener("touchend", stopRecording);
+      };
+    }
+  }, []);
 
   // State to track source and target languages
   const [sourceLanguage, setSourceLanguage] = React.useState("");
@@ -169,11 +199,11 @@ export default function Translation() {
 
         {/* Microphone Button */}
         <button
+          ref={micButtonRef} // Attach ref to the button
+          type="button" // Prevent form submission
           className="!p-2 border-2 rounded-full border-sky-900 rounded-full"
           onMouseDown={startRecording} // Start recording on mouse down
           onMouseUp={stopRecording} // Stop recording on mouse up
-          onTouchStart={startRecording} // Start recording on touch start
-          onTouchEnd={stopRecording} // Stop recording on touch end
         >
           <Mic className="w-10 h-10 !p-2" />
         </button>
