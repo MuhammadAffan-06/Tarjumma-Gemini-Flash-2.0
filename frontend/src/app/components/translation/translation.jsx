@@ -204,6 +204,8 @@ export default function Translation() {
           className="!p-2 border-2 rounded-full border-sky-900 rounded-full"
           onMouseDown={startRecording} // Start recording on mouse down
           onMouseUp={stopRecording} // Stop recording on mouse up
+          onTouchStart={startRecording} // Start recording on touch start
+          onTouchEnd={stopRecording} // Stop recording on touch end
         >
           <Mic className="w-10 h-10 !p-2" />
         </button>
