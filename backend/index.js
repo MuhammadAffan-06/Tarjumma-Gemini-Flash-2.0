@@ -24,7 +24,8 @@ app.post("/api/translate", async (req, res) => {
     const { sourceLang, targetLang, transcript } = req.body;
     console.log("Request Body:", req.body);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const prompt = `The text you have to translate is ${transcript} I want you to translate the sentence from the source language ${sourceLang} to target language ${targetLang}, i don't want any explanation i just want the direct translation for it as we see in the google search.`;
+    const prompt = `Translate the following word or a sentence from the source language ${sourceLang} to target language ${targetLang}:
+    The sentence or word which needs to be translated is ${transcript}. I don't want any explanation at all, just the translation `;
     const result = await model.generateContent(prompt);
     console.log(
       "Result:",
