@@ -3,9 +3,7 @@ import styles from "./translation.module.css";
 import * as React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftRight } from "lucide-react";
-import { Mic } from "lucide-react";
-import { Volume2 } from "lucide-react";
+import { ArrowLeftRight, Mic, Volume2 } from "lucide-react";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
   Select,
@@ -28,6 +26,7 @@ export default function Translation() {
   const [sourceLanguage, setSourceLanguage] = React.useState("");
   const [targetLanguage, setTargetLanguage] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [speakLoading, setSpeakLoading] = useState(false);
 
   // Function to swap source and target languages
   const handleSwapLanguages = () => {
@@ -43,7 +42,7 @@ export default function Translation() {
   const translateText = async (sourceLang, targetLang, transcript) => {
     try {
       setIsLoading(true);
-      const response = await fetch("http://localhost:5002/api/translate", {
+      const response = await fetch("http://localhost:5003/api/translate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -74,24 +73,28 @@ export default function Translation() {
     if (typeof window !== "undefined") {
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
-
+  
       if (!SpeechRecognition) {
         alert("Your browser does not support speech recognition.");
         return;
       }
-
+  
       const recognition = new SpeechRecognition();
-      recognition.continuous = false; // Stop after one sentence
-      recognition.interimResults = false; // Only return final results
-
+      recognition.continuous = false;
+      recognition.interimResults = false;
+  
       // Dynamically set the recognition language based on the selected sourceLanguage
       recognition.lang = getLanguageCode(sourceLanguage);
-
+  
+      let hasResult = false; // Flag to track if a result was received
+  
+      // Event listener for successful recognition
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         console.log("Recognized text:", transcript); // Debugging
         setText(transcript); // Update state with the recognized text
-
+        hasResult = true; // Set flag to true
+  
         // Call the translation API after speech recognition is complete
         if (sourceLanguage && targetLanguage) {
           translateText(sourceLanguage, targetLanguage, transcript);
@@ -99,13 +102,97 @@ export default function Translation() {
           alert("Please select both source and target languages.");
         }
       };
-
+  
+      // Event listener for errors
       recognition.onerror = (event) => {
         console.error("Speech recognition error:", event.error); // Debugging
+        alert(`Speech recognition failed: ${event.error}. Please try again.`);
+        setIsLoading(false); // Reset loading state
       };
-
-      recognition.start();
+  
+      // Event listener for when speech recognition ends
+      recognition.onend = () => {
+        console.log("Speech recognition ended.");
+        if (!hasResult) {
+          alert("No speech detected. Please try again.");
+        }
+        setIsLoading(false); // Reset loading state
+      };
+  
+      // Start speech recognition
+      try {
+        recognition.start();
+        setIsLoading(true); // Set loading state to true
+      } catch (error) {
+        console.error("Error starting speech recognition:", error);
+        alert(
+          "An error occurred while starting speech recognition. Please try again."
+        );
+        setIsLoading(false); // Reset loading state
+      }
     }
+  };
+
+  // Function to handle speech synthesis
+  const handleSpeak = async () => {
+    setSpeakLoading(true); // Set loading state to true
+
+    if (!translatedText) {
+      alert("No translated text available to speak.");
+      setSpeakLoading(false); // Reset loading state
+      return;
+    }
+
+    // Function to load voices
+    const loadVoices = () => {
+      return new Promise((resolve) => {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          resolve(voices);
+        } else {
+          window.speechSynthesis.onvoiceschanged = () => {
+            const voices = window.speechSynthesis.getVoices();
+            resolve(voices);
+          };
+        }
+      });
+    };
+
+    // Load voices
+    const voices = await loadVoices();
+    console.log("Available voices:", voices);
+
+    // Create utterance
+    const utterance = new SpeechSynthesisUtterance();
+    utterance.text = translatedText;
+    utterance.lang = getLanguageCode(targetLanguage);
+
+    // Find a voice that matches the target language
+    const targetVoice = voices.find((voice) => voice.lang === utterance.lang);
+
+    if (targetVoice) {
+      utterance.voice = targetVoice;
+    } else {
+      console.warn(
+        `No voice found for language ${targetLanguage} (${utterance.lang}). Using default voice.`
+      );
+    }
+
+    // Speak the text
+    window.speechSynthesis.cancel(); // Cancel any ongoing speech
+
+    // Set up event listeners for the utterance
+    utterance.onend = () => {
+      console.log("Speech synthesis finished.");
+      setSpeakLoading(false); // Reset loading state
+    };
+
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event.error);
+      setSpeakLoading(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
   };
 
   // Function to map language names to language codes
@@ -122,7 +209,7 @@ export default function Translation() {
       case "Russian":
         return "ru-RU";
       default:
-        return "en-US";
+        return "en-US"; // Fallback to English
     }
   };
 
@@ -256,22 +343,23 @@ export default function Translation() {
         )}
 
         {/* Volume Button */}
-        {isLoading ? (
-          <CircularProgress />
-        ) : (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button className="w-10">
-                  <Volume2 />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="!p-2 text-[var(--light-color)]">
-                Speak aloud
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                className="w-10"
+                onClick={handleSpeak}
+                type="button"
+                disabled={speakLoading || !translatedText} // Disable if loading or no translated text
+              >
+                {speakLoading ? <CircularProgress size={20} /> : <Volume2 />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="!p-2 text-[var(--light-color)]">
+              Speak aloud
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </form>
     </>
   );
