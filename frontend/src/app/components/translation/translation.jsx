@@ -42,7 +42,7 @@ export default function Translation() {
   const translateText = async (sourceLang, targetLang, transcript) => {
     try {
       setIsLoading(true);
-      const response = await fetch("http://localhost:5003/api/translate", {
+      const response = await fetch("/api/translate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
